@@ -1,0 +1,42 @@
+
+    // Firestore rules
+
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Listings
+    match /listings/{listing} {
+      allow read;  // Allows anyone to read listings
+      allow create: if request.auth != null && request.resource.data.imgUrls.size() < 7;  // Authenticated users can create listings with fewer than 7 images
+      allow delete: if resource.data.userRef == request.auth.uid;  // Users can delete their own listings
+      allow update: if resource.data.userRef == request.auth.uid;  // Users can update their own listings
+    }
+   
+    // Users
+    match /users/{user} {
+      allow read: if request.auth != null;  // Allows authenticated users to read user data
+      allow create: if request.auth != null;  // Only authenticated users can create a user document
+      allow update: if request.auth.uid == user;  // Users can update their own user documents
+    }
+  }
+}
+
+
+
+    // Storage rules
+
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read: if true;  // Allows anyone to read files (you may want to restrict this based on your requirements)
+      allow write: if
+        request.auth != null &&  // User must be authenticated
+        request.resource.size < 2 * 1024 * 1024 &&  // File size must be less than 2MB
+        request.resource.contentType.matches('image/.*');  // File must be an image
+    }
+  }
+}
+
